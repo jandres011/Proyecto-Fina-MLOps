@@ -77,9 +77,9 @@ jobs:
         run: |
           echo "Probando docker-compose up..."
           cd infra
-          docker-compose up --build
+          docker compose up --build
           sleep 10
-          docker-compose ps
-          docker-compose logs
-          docker-compose down
-          echo "docker-compose up OK"
+          docker compose ps
+          docker compose logs
+          docker compose down
+          echo "docker compose up OK"
