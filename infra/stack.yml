@@ -1,0 +1,84 @@
+version: "3.8"
+
+services:
+  mlflow:
+    image: mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+      - ./mlflow_data:/mlflow/data
+    command: >
+      mlflow server --host 0.0.0.0 --port 5000
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /mlflow/artifacts
+    networks:
+      - mlops_network
+    deploy:
+      replicas: 1
+
+  llm_connector:
+    image: llm_connector
+    ports:
+      - "8001:8001"
+    env_file:
+      - ../.env
+    networks:
+      - mlops_network
+    deploy:
+      replicas: 1
+
+  sklearn_model:
+    image: sklearn_model
+    ports:
+      - "8002:8002"
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MODEL_URI: models:/ml-classic-wine-classification/latest
+    networks:
+      - mlops_network
+    command: >
+      bash -c "python train.py &&
+      uvicorn predict:app --host 0.0.0.0 --port 8002"
+    deploy:
+      replicas: 1
+
+  cnn:
+    image: cnn
+    ports:
+      - "8003:8003"
+    volumes:
+      - ../cnn-image/models:/app/models
+    networks:
+      - mlops_network
+    command: >
+      bash -c "python train.py &&
+      uvicorn predict:app --host 0.0.0.0 --port 8003"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    deploy:
+      replicas: 1
+
+  frontend_gradio:
+    image: frontend_gradio
+    ports:
+      - "7860:7860"
+    environment:
+      LLM_SERVICE_URL: http://llm_connector:8001
+      ML_SERVICE_URL: http://sklearn_model:8002
+      CNN_SERVICE_URL: http://cnn:8003
+    networks:
+      - mlops_network
+    deploy:
+      replicas: 1
+
+networks:
+  mlops_network:
+    driver: overlay
+
+volumes:
+  ollama_models:
+  mlflow_artifacts:
