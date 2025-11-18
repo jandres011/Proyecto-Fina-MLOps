@@ -46,10 +46,10 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker build -t llm_connector llm_connector/
-          docker build -t ml_model ml_model/
-          docker build -t cnn cnn/
-          docker build -t frontend_gradio frontend_gradio/
+          docker build -t llm_connector llm-connector/
+          docker build -t ml_model sklearn_model/
+          docker build -t cnn cnn-image/
+          docker build -t frontend_gradio gradio_frontend/
           docker build -t mlflow mlflow/
 
       - name: Test docker-compose up
