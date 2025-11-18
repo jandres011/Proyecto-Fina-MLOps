@@ -1,7 +1,7 @@
 name: CI/CD Pipeline
 
 permissions:
-  contents: read  # Permite a GitHub Actions clonar tu repo
+  contents: read 
 
 on:
   push:
@@ -18,85 +18,54 @@ jobs:
       GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
 
     steps:
-      # -----------------------------
-      # CHECKOUT SEGURO
-      # -----------------------------
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: true
           clean: false
-
-      # -----------------------------
-      # DEBUG DEL REPO
-      # -----------------------------
       - name: Lista el contenido del repo
         run: |
           echo "Directorio actual: $(pwd)"
           ls -R .
-
-      # -----------------------------
-      # SETUP PYTHON
-      # -----------------------------
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-
-      # -----------------------------
-      # INSTALAR DEPENDENCIAS GENERALES
-      # -----------------------------
       - name: Install global dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pytest black mypy
 
-      # -----------------------------
-      # VALIDACIÓN DE ESTRUCTURA
-      # -----------------------------
       - name: Validate project structure
         run: |
           echo "Verificando estructura..."
           for folder in llm-connector sklearn_model cnn-image gradio_frontend infra mlflow; do
             if [ ! -d "$folder" ]; then
-              echo "❌ ERROR: Falta carpeta $folder"
+              echo "ERROR: Falta carpeta $folder"
               exit 1
             else
-              echo "✔️ $folder OK"
+              echo "$folder OK"
             fi
           done
-
-      # -----------------------------
-      # ANALISIS DE ESTILO
-      # -----------------------------
       - name: Check code style (Black)
         run: |
           find . -name "*.py" -not -path "./venv/*" | xargs black --check
 
-      # -----------------------------
-      # INSTALAR DEPENDENCIAS POR SERVICIO
-      # -----------------------------
       - name: Install service dependencies
         run: |
           cd llm-connector && pip install -r requirements.txt && cd ..
           cd sklearn_model && pip install -r requirements.txt && cd ..
           cd cnn-image && pip install -r requirements.txt && cd ..
           cd gradio_frontend && pip install -r requirements.txt && cd ..
-
-      # -----------------------------
-      # CACHE DE DOCKER
-      # -----------------------------
+          
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
           path: /var/lib/docker
           key: docker-${{ runner.os }}-${{ hashFiles('**/Dockerfile') }}
           restore-keys: docker-
-
-      # -----------------------------
-      # BUILD DE IMÁGENES
-      # -----------------------------
+          
       - name: Build Docker images
         run: |
           docker build -t llm_connector llm-connector/
@@ -104,10 +73,7 @@ jobs:
           docker build -t cnn cnn-image/
           docker build -t frontend_gradio gradio_frontend/
           docker build -t mlflow mlflow/
-
-      # -----------------------------
-      # PROBAR DOCKER-COMPOSE
-      # -----------------------------
+          
       - name: Test docker-compose up
         run: |
           cd infra
