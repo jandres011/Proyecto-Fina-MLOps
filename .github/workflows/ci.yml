@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install dependencies for tests
         run: |
           python -m pip install --upgrade pip
           pip install pytest black mypy
@@ -28,35 +28,58 @@ jobs:
         run: |
           echo "Verificando estructura de carpetas..."
           ls -la
-          test -d llm-connector
-          test -d sklearn_model
-          test -d cnn-image
-          test -d gradio_frontend
-          test -d infra
-          test -d mlflow
-          echo "Estructura válida"
+          test -d llm-connector && echo " llm-connector OK"
+          test -d sklearn_model && echo " sklearn_model OK"
+          test -d cnn-image && echo " cnn-image OK"
+          test -d gradio_frontend && echo " gradio_frontend OK"
+          test -d infra && echo " infra OK"
+          test -d mlflow && echo " mlflow OK"
+          echo " Estructura válida"
 
       - name: Check code style (Black)
         run: |
           find . -name "*.py" -not -path "./.venv/*" -not -path "./venv/*" | xargs black --check
 
-      - name: Run tests for each service
+      - name: Install service dependencies and run tests
         run: |
-          cd ./sklearn_model && python -m pytest tests/ -v
+          # Test LLM
+          cd llm-connector
+          pip install -r requirements.txt
+          cd ..
+
+          # Test ML
+          cd sklearn_model
+          pip install -r requirements.txt
+          python -m pytest tests/ -v
+          cd ..
+
+          # Test CNN
+          cd cnn-image
+          pip install -r requirements.txt
+          cd ..
+
+          # Test Frontend
+          cd gradio_frontend
+          pip install -r requirements.txt
+          cd ..
 
       - name: Build Docker images
         run: |
+          echo "Construyendo imágenes Docker..."
           docker build -t llm_connector llm-connector/
           docker build -t ml_model sklearn_model/
           docker build -t cnn cnn-image/
           docker build -t frontend_gradio gradio_frontend/
           docker build -t mlflow mlflow/
+          echo "Imágenes construidas"
 
       - name: Test docker-compose up
         run: |
+          echo "Probando docker-compose up..."
           cd infra
           docker-compose up -d --build
           sleep 10
           docker-compose ps
           docker-compose logs
           docker-compose down
+          echo "docker-compose up OK"
