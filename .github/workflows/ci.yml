@@ -50,6 +50,7 @@ jobs:
           docker build -t ml_model ml_model/
           docker build -t cnn cnn/
           docker build -t frontend_gradio frontend_gradio/
+          docker build -t mlflow mlflow/
 
       - name: Test docker-compose up
         run: |
