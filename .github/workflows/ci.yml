@@ -28,11 +28,12 @@ jobs:
         run: |
           echo "Verificando estructura de carpetas..."
           ls -la
-          test -d llm_connector
+          test -d llm-connector
           test -d sklearn_model
-          test -d cnn
-          test -d frontend_gradio
+          test -d cnn-image
+          test -d gradio_frontend
           test -d infra
+          test -d mlflow
           echo "Estructura válida"
 
       - name: Check code style (Black)
