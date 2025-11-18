@@ -49,6 +49,7 @@ jobs:
 
           # Test ML
           cd sklearn_model
+          pip install httpx
           pip install -r requirements.txt
           python -m pytest tests/ -v
           cd ..
