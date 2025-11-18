@@ -16,9 +16,14 @@ jobs:
     
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL}} 
+      OTHER_ENV_VAR: ${{ secrets.OTHER_ENV_VAR }} # si tienes más
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
