@@ -42,7 +42,7 @@ jobs:
 
       - name: Run tests for each service
         run: |
-          cd ../ml_model && python -m pytest tests/ -v
+          cd ../sklearn_model && python -m pytest tests/ -v
 
       - name: Build Docker images
         run: |
