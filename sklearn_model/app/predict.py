@@ -19,10 +19,21 @@ app = FastAPI(title="ML Classic Service", version="2.0.0")
 
 model = None
 FEATURE_NAMES = [
-    "alcohol", "malic_acid", "ash", "alcalinity_of_ash", "magnesium",
-    "total_phenols", "flavanoids", "nonflavanoid_phenols", "proanthocyanins",
-    "color_intensity", "hue", "od280/od315_of_diluted_wines", "proline"
+    "alcohol",
+    "malic_acid",
+    "ash",
+    "alcalinity_of_ash",
+    "magnesium",
+    "total_phenols",
+    "flavanoids",
+    "nonflavanoid_phenols",
+    "proanthocyanins",
+    "color_intensity",
+    "hue",
+    "od280/od315_of_diluted_wines",
+    "proline",
 ]
+
 
 def load_model_from_mlflow():
     global model
@@ -35,7 +46,9 @@ def load_model_from_mlflow():
         logger.error(f"Error cargando modelo desde MLflow: {e}")
         model = None
 
+
 load_model_from_mlflow()
+
 
 class PredictionRequest(BaseModel):
     features: List[float]
@@ -47,11 +60,12 @@ class PredictionResponse(BaseModel):
     feature_names: List[str]
     error: str | None = None
 
+
 @app.get("/health")
 def health():
     return {
         "status": "healthy" if model else "unhealthy",
-        "model_loaded": model is not None
+        "model_loaded": model is not None,
     }
 
 
@@ -64,7 +78,7 @@ def predict(request: PredictionRequest):
             prediction=None,
             probabilities=None,
             feature_names=FEATURE_NAMES,
-            error="Modelo no cargado. Verifica que MLflow esté corriendo y que el modelo exista."
+            error="Modelo no cargado. Verifica que MLflow esté corriendo y que el modelo exista.",
         )
 
     if len(request.features) != len(FEATURE_NAMES):
@@ -72,7 +86,7 @@ def predict(request: PredictionRequest):
             prediction=None,
             probabilities=None,
             feature_names=FEATURE_NAMES,
-            error=f"Se esperaban {len(FEATURE_NAMES)} características."
+            error=f"Se esperaban {len(FEATURE_NAMES)} características.",
         )
 
     try:
@@ -84,9 +98,7 @@ def predict(request: PredictionRequest):
         logger.info(f"Predicción OK: clase={pred}, prob_max={max(probs):.4f}")
 
         return PredictionResponse(
-            prediction=int(pred),
-            probabilities=probs,
-            feature_names=FEATURE_NAMES
+            prediction=int(pred), probabilities=probs, feature_names=FEATURE_NAMES
         )
 
     except Exception as e:
@@ -95,5 +107,5 @@ def predict(request: PredictionRequest):
             prediction=None,
             probabilities=None,
             feature_names=FEATURE_NAMES,
-            error=str(e)
+            error=str(e),
         )

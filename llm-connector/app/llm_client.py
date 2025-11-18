@@ -15,16 +15,23 @@ if GEMINI_API_KEY:
 else:
     raise ValueError("GEMINI_API_KEY no está configurada en las variables de entorno")
 
+
 def query_gemini(prompt: str) -> QueryResponse:
     try:
         # Generar contenido usando el modelo de Gemini
         response = model.generate_content(prompt)
-        
+
         if response.text:
             gemini_response = response.text.strip()
             return QueryResponse(response=gemini_response, model=GEMINI_MODEL)
         else:
-            return QueryResponse(response="", model=GEMINI_MODEL, error="El modelo no generó una respuesta válida.")
+            return QueryResponse(
+                response="",
+                model=GEMINI_MODEL,
+                error="El modelo no generó una respuesta válida.",
+            )
 
     except Exception as e:
-        return QueryResponse(response="", model=GEMINI_MODEL, error=f"Error interno: {str(e)}")
+        return QueryResponse(
+            response="", model=GEMINI_MODEL, error=f"Error interno: {str(e)}"
+        )

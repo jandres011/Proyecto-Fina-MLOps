@@ -10,12 +10,12 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from io import BytesIO
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-tf.get_logger().setLevel('ERROR')
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+tf.get_logger().setLevel("ERROR")
 
 logging.basicConfig(
     level=logging.INFO,
-    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "service": "cnn-service", "message": "%(message)s"}'
+    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "service": "cnn-service", "message": "%(message)s"}',
 )
 logger = logging.getLogger(__name__)
 
@@ -26,11 +26,11 @@ CLASSES = ["airplane", "automobile", "bird"]
 
 def apply_filters(image: Image.Image):
     from PIL import ImageFilter
-    
+
     blur_img = image.filter(ImageFilter.GaussianBlur(radius=2))
     edge_img = image.filter(ImageFilter.FIND_EDGES)
     sharp_img = image.filter(ImageFilter.SHARPEN)
-    
+
     return blur_img, edge_img, sharp_img
 
 
@@ -48,7 +48,9 @@ def load_cnn_model():
         logger.warning("Solución: Ejecuta 'python train.py' para entrenar el modelo")
         return None
 
+
 model = load_cnn_model()
+
 
 class PredictionResponse(BaseModel):
     predicted_class: str
@@ -63,10 +65,11 @@ class HealthResponse(BaseModel):
     model_loaded: bool
     message: str
 
+
 app = FastAPI(
     title="CNN Image Classification Service",
     version="1.0.0",
-    description="Servicio de clasificación de imágenes usando CNN"
+    description="Servicio de clasificación de imágenes usando CNN",
 )
 
 
@@ -77,7 +80,7 @@ def root():
         "version": "1.0.0",
         "status": "running",
         "model_loaded": model is not None,
-        "classes": CLASSES
+        "classes": CLASSES,
     }
 
 
@@ -87,13 +90,13 @@ def health():
         return HealthResponse(
             status="healthy",
             model_loaded=True,
-            message="Modelo cargado y listo para predicciones"
+            message="Modelo cargado y listo para predicciones",
         )
     else:
         return HealthResponse(
             status="degraded",
             model_loaded=False,
-            message="Servicio activo pero modelo no entrenado. Ejecuta train.py"
+            message="Servicio activo pero modelo no entrenado. Ejecuta train.py",
         )
 
 
@@ -106,15 +109,17 @@ async def classify_image(file: UploadFile = File(...)):
             confidence=0.0,
             applied_filters=[],
             limitations="",
-            error="Modelo no disponible. Por favor, entrena el modelo primero ejecutando train.py"
+            error="Modelo no disponible. Por favor, entrena el modelo primero ejecutando train.py",
         )
 
     try:
         contents = await file.read()
         image = Image.open(BytesIO(contents)).convert("RGB")
         original_size = image.size
-        
-        logger.info(f"Imagen recibida: {file.filename}, tamaño original: {original_size}")
+
+        logger.info(
+            f"Imagen recibida: {file.filename}, tamaño original: {original_size}"
+        )
 
         blur_img, edge_img, sharp_img = apply_filters(image)
         applied_filters = ["Gaussian Blur", "Edge Detection", "Sharpen"]
@@ -122,14 +127,14 @@ async def classify_image(file: UploadFile = File(...)):
         image_resized = image.resize((IMG_SIZE, IMG_SIZE))
 
         img_array = np.array(image_resized)
-        img_array = img_array.astype('float32') / 255.0
+        img_array = img_array.astype("float32") / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
         predictions = model.predict(img_array, verbose=0)
         predicted_class_idx = int(np.argmax(predictions[0]))
         confidence = float(predictions[0][predicted_class_idx])
         predicted_class = CLASSES[predicted_class_idx]
-        
+
         logger.info(f"Clasificación: {predicted_class} (confianza: {confidence:.2%})")
 
         limitations = (
@@ -139,15 +144,15 @@ async def classify_image(file: UploadFile = File(...)):
             f"- Precisión limitada (~70-80%)\n"
             f"- Imágenes fuera de estas categorías pueden clasificarse incorrectamente"
         )
-        
+
         return PredictionResponse(
             predicted_class=predicted_class,
             confidence=confidence,
             applied_filters=applied_filters,
             limitations=limitations,
-            error=None
+            error=None,
         )
-        
+
     except Exception as e:
         logger.error(f"Error al procesar imagen: {str(e)}", exc_info=True)
         return PredictionResponse(
@@ -155,18 +160,15 @@ async def classify_image(file: UploadFile = File(...)):
             confidence=0.0,
             applied_filters=[],
             limitations="",
-            error=f"Error al procesar la imagen: {str(e)}"
+            error=f"Error al procesar la imagen: {str(e)}",
         )
 
 
 @app.get("/model-info")
 def model_info():
     if model is None:
-        return {
-            "loaded": False,
-            "message": "Modelo no entrenado"
-        }
-    
+        return {"loaded": False, "message": "Modelo no entrenado"}
+
     try:
         return {
             "loaded": True,
@@ -175,27 +177,17 @@ def model_info():
             "input_shape": model.input_shape,
             "output_shape": model.output_shape,
             "total_params": model.count_params(),
-            "architecture": "Sequential CNN con 3 capas convolucionales"
+            "architecture": "Sequential CNN con 3 capas convolucionales",
         }
     except Exception as e:
-        return {
-            "loaded": True,
-            "error": str(e)
-        }
+        return {"loaded": True, "error": str(e)}
 
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     logger.info("Iniciando CNN Service...")
     logger.info(f"Ruta del modelo: {MODEL_PATH}")
     logger.info(f"Clases disponibles: {CLASSES}")
-    
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        log_level="info"
-    )
 
-
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

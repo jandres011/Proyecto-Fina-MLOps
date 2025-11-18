@@ -12,11 +12,14 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="LLM Connector Service", version="1.0.0")
 
+
 @app.post("/query")
 async def query_llm(request: QueryRequest):
     if not request.prompt.strip():
         logger.warning("Prompt vacío recibido")
-        return QueryResponse(response="", model=GEMINI_MODEL, error="El prompt no puede estar vacío.")
+        return QueryResponse(
+            response="", model=GEMINI_MODEL, error="El prompt no puede estar vacío."
+        )
 
     result = query_gemini(request.prompt)
 
@@ -27,7 +30,7 @@ async def query_llm(request: QueryRequest):
     logger.info(f"LLM response generado para prompt: {request.prompt[:30]}...")
     return result
 
+
 @app.get("/health", response_model=HealthResponse)
 def health():
     return HealthResponse(status="healthy", model=GEMINI_MODEL, api_url="Gemini API")
-    

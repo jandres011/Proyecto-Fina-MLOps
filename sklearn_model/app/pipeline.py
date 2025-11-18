@@ -44,15 +44,17 @@ def train_model() -> Dict[str, Any]:
 
     logger.info("Creando Pipeline sklearn (Scaler + RandomForest)...")
 
-    pipeline = Pipeline([
-        ("scaler", StandardScaler()),
-        ("model", RandomForestClassifier(
-            n_estimators=100,
-            max_depth=10,
-            min_samples_split=5,
-            random_state=42
-        ))
-    ])
+    pipeline = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            (
+                "model",
+                RandomForestClassifier(
+                    n_estimators=100, max_depth=10, min_samples_split=5, random_state=42
+                ),
+            ),
+        ]
+    )
 
     logger.info("Entrenando modelo...")
     pipeline.fit(X_train, y_train)
@@ -66,12 +68,14 @@ def train_model() -> Dict[str, Any]:
     setup_mlflow()
 
     with mlflow.start_run(run_name="wine-classification-run"):
-        mlflow.log_params({
-            "n_estimators": 100,
-            "max_depth": 10,
-            "min_samples_split": 5,
-            "random_state": 42
-        })
+        mlflow.log_params(
+            {
+                "n_estimators": 100,
+                "max_depth": 10,
+                "min_samples_split": 5,
+                "random_state": 42,
+            }
+        )
 
         mlflow.log_metric("accuracy", accuracy)
         mlflow.log_metric("f1_score", f1)
@@ -79,7 +83,7 @@ def train_model() -> Dict[str, Any]:
         mlflow.sklearn.log_model(
             pipeline,
             artifact_path="model",
-            registered_model_name="ml-classic-wine-classification"
+            registered_model_name="ml-classic-wine-classification",
         )
 
         report = classification_report(y_test, y_pred, output_dict=True)
@@ -94,5 +98,5 @@ def train_model() -> Dict[str, Any]:
         "pipeline": pipeline,
         "accuracy": accuracy,
         "f1_score": f1,
-        "feature_names": list(X.columns)
+        "feature_names": list(X.columns),
     }
