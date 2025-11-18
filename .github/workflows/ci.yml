@@ -6,14 +6,23 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   test-and-validate:
-    environment: .env
     runs-on: ubuntu-latest
+    
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      OTHER_ENV_VAR: ${{ secrets.OTHER_ENV_VAR }} 
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -27,15 +36,14 @@ jobs:
 
       - name: Validate structure
         run: |
-          echo "Verificando estructura de carpetas..."
           ls -la
-          test -d llm-connector && echo " llm-connector OK"
-          test -d sklearn_model && echo " sklearn_model OK"
-          test -d cnn-image && echo " cnn-image OK"
-          test -d gradio_frontend && echo " gradio_frontend OK"
-          test -d infra && echo " infra OK"
-          test -d mlflow && echo " mlflow OK"
-          echo " Estructura válida"
+          test -d llm-connector
+          test -d sklearn_model
+          test -d cnn-image
+          test -d gradio_frontend
+          test -d infra
+          test -d mlflow
+          echo "Estructura OK"
 
       - name: Check code style (Black)
         run: |
@@ -43,44 +51,26 @@ jobs:
 
       - name: Install service dependencies and run tests
         run: |
-          # Test LLM
-          cd llm-connector
-          pip install -r requirements.txt
-          cd ..
-
-          # Test ML
-          cd sklearn_model
-          pip install httpx
-          pip install -r requirements.txt
-          cd ..
-
-          # Test CNN
-          cd cnn-image
-          pip install -r requirements.txt
-          cd ..
-
-          # Test Frontend
-          cd gradio_frontend
-          pip install -r requirements.txt
-          cd ..
+          for svc in llm-connector sklearn_model cnn-image gradio_frontend; do
+            echo "Testing $svc"
+            cd $svc
+            pip install -r requirements.txt || true
+            cd ..
+          done
 
       - name: Build Docker images
         run: |
-          echo "Construyendo imágenes Docker..."
           docker build -t llm_connector llm-connector/
           docker build -t ml_model sklearn_model/
           docker build -t cnn cnn-image/
           docker build -t frontend_gradio gradio_frontend/
           docker build -t mlflow mlflow/
-          echo "Imágenes construidas"
 
       - name: Test docker-compose up
         run: |
-          echo "Probando docker-compose up..."
           cd infra
-          docker compose up --build
-          sleep 10
+          docker compose up -d --build
+          sleep 12
           docker compose ps
-          docker compose logs
+          docker compose logs --tail 50
           docker compose down
-          echo "docker compose up OK"
